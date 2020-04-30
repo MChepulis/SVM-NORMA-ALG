@@ -3,17 +3,31 @@ import numpy as np
 
 from sample_generator import generate_dict, Sample
 from NORMA_SVM import NORMA
+from kernels import kernel_LINEAR, kernel_GAUSS
 
 
 def draw_divide_line(train_sample, classificator):
-
     fig, ax = plt.subplots(1, 1)
     train_sample.draw(fig, ax, marker=True)
-    num_of_elem = 50
-    start_x = -3
-    start_y = -3
-    end_x = 15
-    end_y = 15
+    num_of_elem = 10
+
+    start_x = train_sample.points[0].value[0]
+    start_y = train_sample.points[0].value[1]
+    end_x = train_sample.points[0].value[0]
+    end_y = train_sample.points[0].value[1]
+
+    offset = 2
+
+    for pt in train_sample.points:
+        if pt.value[0] < start_x:
+            start_x = pt.value[0] - offset
+        if pt.value[1] < start_y:
+            start_y = pt.value[1] - offset
+        if pt.value[0] > end_x:
+            end_x = pt.value[0] + offset
+        if pt.value[1] > end_y:
+            end_y = pt.value[1] + offset
+
     for i in range(num_of_elem):
         row = start_y + (end_y - start_y) * i / num_of_elem
         for j in range(num_of_elem):
@@ -29,7 +43,7 @@ def draw_divide_line(train_sample, classificator):
                 ax.plot(point[0], point[1], ".g")
 
     fig.show()
-    plt.close(fig)
+    #plt.close(fig)
 
 
 def test(train_sample, test_sample, classificator, ):
@@ -48,12 +62,12 @@ def test(train_sample, test_sample, classificator, ):
     plt.close(fig)
 
 
-def main():
+def run_NORMA(sample_capasity, correlation, shift, lamda, ro, ny, kernel, gauss_sigma):
     generator = generate_dict["shift_normal"]
     gen_f = generator.get_func()
-    shift = [10, 10]
-    p = 0  # коэф корреляции x_1 и x_2
-    sample_capacity = 1000
+    shift = [shift, shift]
+    p = correlation                      # коэф корреляции x_1 и x_2
+    sample_capacity = sample_capasity
 
     read_from_file_flag = False
     data_filename = "data.csv"
@@ -70,8 +84,14 @@ def main():
     fig.show()
     plt.close(fig)
 
+    k = None
+    if kernel == 'Linear':
+        k = kernel_LINEAR()
+    elif kernel == 'Gauss':
+        k = kernel_GAUSS(gauss_sigma)
+
     classificator = NORMA(train_sample)
-    classificator.learn(lambda_var=25, ro=1, kernel=None)
+    classificator.learn(lamda, ro, k, ny)
 
     test_sample_capacity = 100
     test_sample = Sample(gen_f(test_sample_capacity, shift=shift, p=p))
@@ -84,7 +104,55 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import PySimpleGUI as sg
+
+    # default params
+    sample_capacity = 100
+    shift = 10
+    correlation = 0
+    lamda = 10
+    ro = 1
+    ny = 0.5
+    gauss_sigma = 1
+
+    sg.theme('DarkAmber')
+
+    layout = [[sg.Text('Sample settings', font=("Helvetica", 15), text_color='blue')],
+              [sg.Text('Sample capasity:'), sg.InputText(key='sample_capasity', default_text=sample_capacity)],
+              [sg.Text('Сorrelation:'), sg.InputText(key='correlation', default_text=correlation)],
+              [sg.Text('Shift:'), sg.InputText(key='shift', default_text=shift)],
+
+              [sg.Text('NORMA settings', font=("Helvetica", 15), text_color='blue')],
+              [sg.Text('lambda:'), sg.InputText(key='lambda', default_text=lamda)],
+              [sg.Text('ro:'), sg.InputText(key='ro', default_text=ro)],
+              [sg.Text('ny:'), sg.InputText(key='ny', default_text=ny)],
+
+              [sg.Text('Kernel:'), sg.Listbox(values=["Linear", "Gauss"], size=(30, 2), key='kernel', default_values=["Linear"])],
+
+              [sg.Text('Gauss kernel settings', font=("Helvetica", 15), text_color='blue')],
+              [sg.Text('sigma:'), sg.InputText(key='gauss_sigma', default_text=gauss_sigma)],
+
+              [sg.Button('Ok'), sg.Button('Cancel')]
+    ]
+
+    window = sg.Window('Window Title', layout)
+    while True:
+        event, values = window.read()
+        if event in (None, 'Cancel'):
+            break
+        if event in (None, 'Ok'):
+            print(values['correlation'], values['sample_capasity'], values['shift'], values['lambda'], values['ro'])
+            run_NORMA(
+                sample_capasity=int(values['sample_capasity']),
+                correlation=float(values['correlation']),
+                shift=float(values['shift']),
+                lamda=float(values['lambda']),
+                ro=float(values['ro']),
+                ny=float(values['ny']),
+                kernel=values['kernel'][0],
+                gauss_sigma=float(values['gauss_sigma'])
+            )
+
 
 
 
