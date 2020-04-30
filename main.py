@@ -48,28 +48,6 @@ def test(train_sample, test_sample, classificator, ):
     plt.close(fig)
 
 
-def norma(x, y):
-    summa = 0
-    for i in range(len(x)):
-        summa += x[i]*y[i]
-    return np.sqrt(summa)
-
-
-def dot(x, y):
-    summa = 0
-    for i in range(len(x)):
-        summa += x[i] * y[i]
-    return summa
-
-
-def gauss_kernel(x, y):
-    global sigma
-    if sigma is None:
-        sigma = 1
-    result = np.exp(-(dot(x, y) / (2 * (sigma ** 2))))
-    return result
-
-
 def main():
     generator = generate_dict["shift_normal"]
     gen_f = generator.get_func()
@@ -93,8 +71,6 @@ def main():
     plt.close(fig)
 
     classificator = NORMA(train_sample)
-    global sigma
-    sigma = None
     classificator.learn(lambda_var=25, ro=1, kernel=None)
 
     test_sample_capacity = 100
@@ -105,6 +81,7 @@ def main():
     print("\n\n\n")
 
     draw_divide_line(train_sample, classificator)
+
 
 if __name__ == "__main__":
     main()
