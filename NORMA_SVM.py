@@ -55,7 +55,7 @@ class NORMA:
             result += self.coef[i] * self.kernel(x_i, point)
         return result
 
-    def learn(self, lambda_var = None, ro=None, kernel=None, ny_coef=None):
+    def learn(self, lambda_var=None, ro=None, kernel=None, ny_coef=None):
 
         if lambda_var is None:
             self.lambda_var = self.defaul["lambda_var"]
