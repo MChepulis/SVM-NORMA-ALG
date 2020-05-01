@@ -2,7 +2,18 @@ import numpy as np
 import random as rand
 import csv
 
-def generate_shift_normal(capacity, shift=[3, 3], alpha=1/2, p=0, mean=[0, 0]):
+
+def generate_shift_normal(capacity, args):
+    if args is None:
+        shift = [10, 10]
+        alpha = 1/2
+        p = 0
+        mean = [0, 0]
+    else:
+        shift = args["shift"]
+        alpha = args["alpha"]
+        p = args["p"]
+        mean = args["mean"]
     cov1 = [[1, p], [p, 1]]
     mean1 = mean
     mean2 = [mean1[i] + shift[i] for i in range(len(mean1))]
@@ -30,6 +41,41 @@ def generate_uniform_sin(capacity):
         data.append(tmp)
 
     return data
+
+
+def generate_circle(capacity, args):
+    if args is None:
+        alpha = 1/2
+        p = 0
+        mean = [0, 0]
+        r_mean = 8
+        r_scale = 0.5
+    else:
+        alpha = args["alpha"]
+        p = args["p"]
+        mean = args["mean"]
+        r_mean = args["r_mean"]
+        r_scale = args["r_scale"]
+
+    cov1 = [[1, p], [p, 1]]
+    min_angle = 0
+    max_angle = 2 * np.pi
+    data = []
+    for i in range(0, capacity):
+        flag = rand.random()
+        if flag < alpha:
+            value = np.random.multivariate_normal(mean, cov1, 1)
+            tmp = Point(value[0], 1)
+
+        else:
+            angle = np.random.uniform(min_angle, max_angle, 1)
+            radius = np.random.normal(r_mean, r_scale, 1)
+            x = radius[0] * np.cos(angle[0])
+            y = radius[0] * np.sin(angle[0])
+            tmp = Point([x, y], -1)
+        data.append(tmp)
+    return data
+
 
 
 class Point:
@@ -93,7 +139,7 @@ class Sample:
     def is_table_empty(table):
         for row in table:
             for cell in row:
-                if cell !=  "":
+                if cell != "":
                     return False
 
         return True
@@ -116,6 +162,7 @@ class Sample:
             prev_delim = ""
             for row in csv.reader(file_d, delimiter=';'):
                 table.append(row)
+                print(row)
             file_d.close()
             # если таблица пустая, то можно ничего не искать
             if self.is_table_empty(table):
@@ -249,11 +296,12 @@ class SampleGenerator:
     def get_func(self):
         return self.generate_func
 
-    def generate(self, num):
-        return Sample(self.generate_func(num))
+    def generate(self, num, args):
+        return Sample(self.generate_func(num, args))
 
 
 generate_dict = {
     'shift_normal': SampleGenerator(generate_shift_normal),
     'uniform_sin': SampleGenerator(generate_uniform_sin),
+    'circle' : SampleGenerator(generate_circle),
 }

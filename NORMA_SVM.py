@@ -1,5 +1,5 @@
 import numpy as np
-
+from enum import Enum
 
 class NORMA:
     def __init__(self, sample):
@@ -29,6 +29,33 @@ class NORMA:
             result += self.coef[i] * self.kernel.kernel_func(self.sample.points[i].value, x)
 
         return np.sign(result + self.b)
+
+    def classify(self, x):
+        result = 0
+        for i in range(self.length):
+            result += self.coef[i] * self.kernel.kernel_func(self.sample.points[i].value, x)
+
+        return np.sign(result + self.b)
+
+    class AnswerType(Enum):
+        LEFT = 1
+        RIGHT = 2
+        LEFT_MARGIN = 3
+        RIGHT_MARGIN = 4
+
+    def get_classify_answer(self, x):
+        f_x = 0
+        for i in range(self.length):
+            f_x += self.coef[i] * self.kernel.kernel_func(self.sample.points[i].value, x)
+        g_x = f_x + self.b
+        if self.ro < g_x:
+            return self.AnswerType.RIGHT
+        elif 0 < g_x < self.ro:
+            return self.AnswerType.RIGHT_MARGIN
+        elif -self.ro < g_x < 0:
+            return self.AnswerType.LEFT_MARGIN
+        elif g_x < -self.ro:
+            return self.AnswerType.LEFT
 
     def f_t(self, point, t):
         ind_start = max(1, t - self.tay)

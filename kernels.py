@@ -8,15 +8,11 @@ def dot(x, y):
     return summa
 
 
-class kernel_NORMA2:
-    def __init__(self):
-        pass
-
-    def kernel_func(self, x):
-        summa = 0
-        for i in range(len(x)):
-            summa += x[i] ** 2
-        return np.sqrt(summa)
+def norma2(x):
+    summa = 0
+    for i in range(len(x)):
+        summa += x[i] ** 2
+    return np.sqrt(summa)
 
 
 class kernel_LINEAR:
@@ -35,6 +31,7 @@ class kernel_GAUSS:
         self.sigma = sigma
 
     def kernel_func(self, x, y):
-        result = np.exp(-(dot(x, y) / (2 * (self.sigma ** 2))))
+        sub_x_y = [x[i] - y[i] for i in range(len(x))]
+        result = np.exp(-(norma2(sub_x_y) / (2 * (self.sigma ** 2))))
         return result
 
