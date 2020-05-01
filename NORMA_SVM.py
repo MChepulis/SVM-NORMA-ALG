@@ -16,7 +16,6 @@ class NORMA:
         self.coef = []
         self.b = 0
 
-
     def los_func_deriv(self, f_x_t, y_t):
         if y_t * f_x_t <= self.ro:
             return -y_t

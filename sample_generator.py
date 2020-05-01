@@ -162,7 +162,6 @@ class Sample:
             prev_delim = ""
             for row in csv.reader(file_d, delimiter=';'):
                 table.append(row)
-                print(row)
             file_d.close()
             # если таблица пустая, то можно ничего не искать
             if self.is_table_empty(table):

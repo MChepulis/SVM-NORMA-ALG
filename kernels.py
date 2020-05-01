@@ -19,6 +19,9 @@ class kernel_LINEAR:
     def __init__(self):
         pass
 
+    def get_name(self):
+        return "Liner"
+
     def kernel_func(self, x, y):
         summa = 0
         for i in range(len(x)):
@@ -29,6 +32,9 @@ class kernel_LINEAR:
 class kernel_GAUSS:
     def __init__(self, sigma):
         self.sigma = sigma
+
+    def get_name(self):
+        return "Gauss"
 
     def kernel_func(self, x, y):
         sub_x_y = [x[i] - y[i] for i in range(len(x))]
