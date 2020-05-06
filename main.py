@@ -6,12 +6,13 @@ import random
 from sample_generator import generate_dict, Sample
 from NORMA_SVM import NORMA
 from kernels import kernel_LINEAR, kernel_GAUSS
+from auto_preprocessing import accuracy_test, greed_args_brute_force
 
 
 def draw_divide_line(train_sample, classificator):
     fig, ax = plt.subplots(1, 1)
     train_sample.draw(fig, ax, marker=True)
-    num_of_elem = 20
+    num_of_elem = 50
 
     start_x = train_sample.points[0].value[0]
     start_y = train_sample.points[0].value[1]
@@ -94,7 +95,7 @@ def run_NORMA(sample_capacity, correlation, shift, lamda, ro, ny, kernel, gauss_
             "mean": [0, 0]
         }
 
-    read_from_file_flag = False
+    read_from_file_flag = True
     data_filename = "data.csv"
     train_sample_capacity = sample_capacity
 
@@ -112,9 +113,9 @@ def run_NORMA(sample_capacity, correlation, shift, lamda, ro, ny, kernel, gauss_
 
     k = None
     if kernel == 'Linear':
-        k = kernel_LINEAR()
+        k = kernel_LINEAR({})
     elif kernel == 'Gauss':
-        k = kernel_GAUSS(gauss_sigma)
+        k = kernel_GAUSS({"sigma": gauss_sigma})
 
     classificator = NORMA(train_sample)
     classificator.learn(lamda, ro, k, ny)
@@ -132,121 +133,6 @@ def run_NORMA(sample_capacity, correlation, shift, lamda, ro, ny, kernel, gauss_
 
     accuracy = accuracy_test(test_sample, classificator)
     print("accuracy = %s" % format(accuracy, ""))
-
-def accuracy_test(test_sample, classificator):
-    good_answer = 0
-    for point in test_sample.points:
-        answer = classificator.classify(point.value)
-        if answer == point.mark:
-            good_answer += 1
-    accuracy = good_answer / test_sample.length()
-    return accuracy
-
-
-def cross_validation(train_sample, test_sample,  norma_params):
-    lambda_var = norma_params["lambda_var"]
-    ro = norma_params["ro"]
-    kernel = norma_params["kernel"]
-    ny = norma_params["ny"]
-
-    classificator = NORMA(train_sample)
-    classificator.learn(lambda_var, ro, kernel, ny)
-    accuracy = accuracy_test(test_sample, classificator)
-    return accuracy
-
-
-def cv_test(sample, norma_param, order=1,  train_percent=0.8):
-    divide_ind = int(np.floor(sample.length() * train_percent))
-
-    accuracy_arr = []
-    for i in range(order):
-        points = sample.points.copy()
-        random.shuffle(points)
-
-        train_sample = Sample(points[:divide_ind])
-        test_sample = Sample(points[divide_ind:])
-
-        curr_accuracy = cross_validation(train_sample, test_sample, norma_param)
-        accuracy_arr.append(curr_accuracy)
-
-    accuracy_mean = np.mean(accuracy_arr)
-    accuracy_var = np.var(accuracy_arr)
-    return accuracy_mean, accuracy_var
-
-
-def greed_args_brute_force():
-    lambda_min = 0.1
-    lambda_max = 20
-    lambda_num_of_steps = 10
-    lambda_arr = np.linspace(lambda_min, lambda_max, lambda_num_of_steps)
-
-    ro_min = 0.001
-    ro_max = 2
-    ro_num_of_steps = 10
-    ro_arr = np.linspace(ro_min, ro_max, ro_num_of_steps)
-
-    sigma_min = 0
-    sigma_max = 5
-    sigma_num_of_steps = 10
-    sigma_arr = np.linspace(sigma_min, sigma_max, sigma_num_of_steps)
-
-    kernel_name_arr = ["kernel_GAUSS", "kernel_LINEAR"]
-    sample_capacity = 100
-
-    gen_flag = 1
-    if gen_flag == 1:
-        key = "circle"
-        generator = generate_dict["circle"]
-        generator_args = {
-            "p": 0,
-            "alpha": 1 / 2,
-            "mean": [0, 0],
-            "r_mean": 20,
-            "r_scale": 0.5,
-        }
-    else:
-        key = "shift_normal"
-        generator = generate_dict["shift_normal"]
-        generator_args = {
-            "shift": [10, 10],
-            "p": 0,
-            "alpha": 1 / 2,
-            "mean": [0, 0]
-        }
-
-    for kernel_name in kernel_name_arr:
-        if kernel_name == "kernel_GAUSS":
-            tmp_sigma_arr = sigma_arr
-        elif kernel_name == "kernel_LINEAR":
-            tmp_sigma_arr = [1]
-            kernel = kernel_LINEAR()
-        else:
-            tmp_sigma_arr = [1]
-
-        for sigma in tmp_sigma_arr:
-            if kernel_name == "kernel_GAUSS":
-                kernel = kernel_GAUSS(sigma)
-
-            for lambda_var in lambda_arr:
-                for ro in ro_arr:
-                    norma_param = {
-                        "lambda_var": lambda_var,
-                        "ro": ro,
-                        "kernel": kernel,
-                        "ny": 1/2
-                    }
-
-                    sample = generator.generate(sample_capacity, generator_args)
-                    accuracy_mean, accuracy_var = cv_test(sample, norma_param, 1, 0.8)
-                    print("kernel = %s" % kernel.get_name(), end="\t")
-                    print("lambda_var = %s" % format(lambda_var, ""), end="\t")
-                    print("ro = %s" % format(ro, ""), end="\t")
-                    print("accuracy_var = %s" % format(accuracy_var, ""), end="\t")
-                    print("accuracy_mean = %s" % format(accuracy_mean, ""), end="\t")
-                    print()
-
-        # TODO обработаьть
-
 
 def main():
     # default params
@@ -298,9 +184,65 @@ def main():
             )
 
 
+def greed_auto_tuning():
+    gen_flag = 1
+    if gen_flag == 1:
+        key = "circle"
+        generator = generate_dict["circle"]
+        generator_args = {
+            "p": 0,
+            "alpha": 1 / 2,
+            "mean": [0, 0],
+            "r_mean": 20,
+            "r_scale": 0.5,
+        }
+    else:
+        key = "shift_normal"
+        generator = generate_dict["shift_normal"]
+        generator_args = {
+            "shift": [10, 10],
+            "p": 0,
+            "alpha": 1 / 2,
+            "mean": [0, 0]
+        }
+    train_sample_capacity = 100
+    test_sample_capacity = 1000
+    train_sample = generator.generate(train_sample_capacity, generator_args)
+
+    best_accuracy, best_params = greed_args_brute_force(train_sample)
+
+    fig, ax = plt.subplots(1, 1)
+    train_sample.draw(fig, ax, marker=True)
+    fig.show()
+    plt.close(fig)
+
+    kernel = best_params["kernel"]
+    lamda = best_params["lambda_var"]
+    ro = best_params["ro"]
+    ny = best_params["ny"]
+
+    classificator = NORMA(train_sample)
+    classificator.learn(lamda, ro, kernel, ny)
+
+    test_sample = generator.generate(test_sample_capacity, generator_args)
+
+    test(train_sample, test_sample, classificator)
+
+    print("\n\n\n")
+
+    draw_divide_line(train_sample, classificator)
+
+    print("\n\n\n")
+
+    accuracy = accuracy_test(test_sample, classificator)
+    print("accuracy = %s" % format(accuracy, ""))
+
+
+
 if __name__ == "__main__":
-    # greed_args_brute_force()
-    main()
+    greed_auto_tuning()
+
+    # main()
 
 
 

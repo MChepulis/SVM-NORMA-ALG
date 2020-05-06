@@ -16,8 +16,12 @@ def norma2(x):
 
 
 class kernel_LINEAR:
-    def __init__(self):
+    def __init__(self, kernel_param={}):
         pass
+
+    def __str__(self):
+        result = self.get_name() + "()"
+        return result
 
     def get_name(self):
         return "Liner"
@@ -30,8 +34,13 @@ class kernel_LINEAR:
 
 
 class kernel_GAUSS:
-    def __init__(self, sigma):
+    def __init__(self, kernel_param):
+        sigma = kernel_param["sigma"]
         self.sigma = sigma
+
+    def __str__(self):
+        result = self.get_name() + "(%s)" % format(self.sigma, "")
+        return result
 
     def get_name(self):
         return "Gauss"
@@ -40,4 +49,6 @@ class kernel_GAUSS:
         sub_x_y = [x[i] - y[i] for i in range(len(x))]
         result = np.exp(-(norma2(sub_x_y) / (2 * (self.sigma ** 2))))
         return result
+
+
 

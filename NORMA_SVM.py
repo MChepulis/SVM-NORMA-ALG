@@ -47,13 +47,13 @@ class NORMA:
         for i in range(self.length):
             f_x += self.coef[i] * self.kernel.kernel_func(self.sample.points[i].value, x)
         g_x = f_x + self.b
-        if self.ro < g_x:
+        if self.ro <= g_x:
             return self.AnswerType.RIGHT
-        elif 0 < g_x < self.ro:
+        elif 0 <= g_x < self.ro:
             return self.AnswerType.RIGHT_MARGIN
-        elif -self.ro < g_x < 0:
+        elif -self.ro <= g_x < 0:
             return self.AnswerType.LEFT_MARGIN
-        elif g_x < -self.ro:
+        elif g_x <= -self.ro:
             return self.AnswerType.LEFT
 
     def f_t(self, point, t):
