@@ -52,6 +52,68 @@ def draw_divide_line_with_contour(train_sample, classificator, num_of_elem=10, o
     # plt.close(fig)
 
 
+from celluloid import Camera
+
+
+def draw_line_on_step(classificator, num_of_elem=10, offset=2, name="line_on_step"):
+    fig, ax = plt.subplots(1, 1)
+    camera = Camera(fig)
+    train_sample = classificator.sample
+
+    for i in range(len(classificator.sample.points)):
+        print("{}\t". format(i, ""), end="")
+        tmp_sample = Sample(classificator.sample.points[:i])
+        train_sample.draw(fig, ax, marker=True)
+        tmp_sample.draw(fig, ax, marker=False)
+        draw_divide_line_with_contour_on_step(fig, ax, train_sample, classificator, num_of_elem, offset, i)
+
+        camera.snap()
+
+    anim = camera.animate()
+    anim.save("%s.gif" % name, writer="imagemagick")
+    plt.close(fig)
+
+
+def draw_divide_line_with_contour_on_step(fig, ax, train_sample, classificator, num_of_elem=10, offset=2, step=-1):
+
+    start_x = train_sample.points[0].value[0]
+    start_y = train_sample.points[0].value[1]
+    end_x = train_sample.points[0].value[0]
+    end_y = train_sample.points[0].value[1]
+
+    for pt in train_sample.points:
+        if pt.value[0] < start_x:
+            start_x = pt.value[0]
+        if pt.value[1] < start_y:
+            start_y = pt.value[1]
+        if pt.value[0] > end_x:
+            end_x = pt.value[0]
+        if pt.value[1] > end_y:
+            end_y = pt.value[1]
+
+    start_x = start_x - offset
+    start_y = start_y - offset
+    end_x = end_x + offset
+    end_y = end_y + offset
+    x = np.linspace(start_x, end_x, num_of_elem)
+    y = np.linspace(start_y, end_y, num_of_elem)
+    marks = []
+
+    for i in range(num_of_elem):
+        row = y[i]
+        marks_line = []
+        for j in range(num_of_elem):
+            col = x[j]
+            point = [col, row]
+            mark = classificator.classify_func_on_step(step, point)
+            marks_line.append(mark)
+        marks.append(marks_line)
+
+    lev = [0]
+    ax.contour(x, y, marks, levels=lev, colors='r')
+
+
+
 def draw_divide_line(train_sample, classificator, num_of_elem=10, offset=2):
     fig, ax = plt.subplots(1, 1)
     train_sample.draw(fig, ax, marker=True)
@@ -230,6 +292,8 @@ def greed_auto_tuning():
     is_need_save_coef_on_step = False
     if gen_flag == 1:
         key = "circle"
+        line_on_step_gif_name = "gauss_line_on_step"
+        coef_on_step_gif_name = "gauss_coef_on_step"
         seed = 1
         generator = generate_dict["circle"]
         generator_args = {
@@ -263,6 +327,8 @@ def greed_auto_tuning():
         train_percent = 0.8
     else:
         key = "shift_normal"
+        line_on_step_gif_name = "linear_line_on_step"
+        coef_on_step_gif_name = "linear_coef_on_step"
         seed = 1
         generator = generate_dict["shift_normal"]
         generator_args = {
@@ -271,7 +337,7 @@ def greed_auto_tuning():
             "alpha": 1 / 2,
             "mean": [0, 0]
         }
-        train_sample_capacity = 200
+        train_sample_capacity = 100
         test_sample_capacity = 1000
 
         ro = 1
@@ -310,6 +376,8 @@ def greed_auto_tuning():
     train_sample.draw(fig, ax, marker=True)
     fig.show()
     plt.close(fig)
+    if gen_flag == 1:
+        print("best machine params: sigma = {}, c = {}".format(best_machine.kernel.sigma, best_machine.C))
 
     kernel = best_params["kernel"]
     lamda = best_params["lambda_var"]
@@ -345,8 +413,8 @@ def greed_auto_tuning():
     classificator.show_b_on_step()
     classificator.show_coef_on_step()
     if is_need_save_coef_on_step:
-        classificator.save_coef_on_step_as_gif()
-
+        classificator.save_coef_on_step_as_gif(name=coef_on_step_gif_name)
+    draw_line_on_step(classificator, name=line_on_step_gif_name, num_of_elem=50, offset=2)
 
 if __name__ == "__main__":
     greed_auto_tuning()
