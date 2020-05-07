@@ -23,7 +23,8 @@ class kernel_LINEAR:
         result = self.get_name() + "()"
         return result
 
-    def get_name(self):
+    @staticmethod
+    def get_name():
         return "Liner"
 
     def kernel_func(self, x, y):
@@ -42,7 +43,8 @@ class kernel_GAUSS:
         result = self.get_name() + "(%s)" % format(self.sigma, "")
         return result
 
-    def get_name(self):
+    @staticmethod
+    def get_name():
         return "Gauss"
 
     def kernel_func(self, x, y):

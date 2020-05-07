@@ -29,12 +29,12 @@ class NORMA:
 
         return np.sign(result + self.b)
 
-    def classify(self, x):
+    def classify_func(self, x):
         result = 0
         for i in range(self.length):
             result += self.coef[i] * self.kernel.kernel_func(self.sample.points[i].value, x)
 
-        return np.sign(result + self.b)
+        return result + self.b
 
     class AnswerType(Enum):
         LEFT = 1
@@ -69,7 +69,7 @@ class NORMA:
         self.lambda_var = lambda_var
         self.ro = ro
         self.kernel = kernel
-        self.ny_coef = 0.5
+        self.ny_coef = ny_coef
 
         self.init_learn()
         t = 1

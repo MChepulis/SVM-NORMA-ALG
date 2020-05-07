@@ -3,6 +3,7 @@ import random
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+from functions import print_dict
 from sample_generator import Sample
 from NORMA_SVM import NORMA
 from kernels import kernel_LINEAR, kernel_GAUSS
@@ -55,6 +56,9 @@ def cv_test(sample, norma_param, order=1,  train_percent=0.8):
         test_sample = Sample(points[divide_ind:])
 
         curr_accuracy = cross_validation(train_sample, test_sample, norma_param)
+        train_f, train_s = count_mark(train_sample)
+        test_f, test_s = count_mark(test_sample)
+        print("train[{}, {}]\t test[{}, {}]\taccur = {}".format(train_f, train_s, test_f, test_s, curr_accuracy))
         accuracy_arr.append(curr_accuracy)
 
     accuracy_mean = np.mean(accuracy_arr)
@@ -71,41 +75,17 @@ def get_potential_best_params(potential_best_params, best_accuracy, percent_for_
     return result
 
 
-def greed_args_brute_force(sample):
-    lambda_min = 0.1
-    lambda_max = 50
-    lambda_num_of_steps = 25
-    lambda_arr = np.linspace(lambda_min, lambda_max, lambda_num_of_steps)
-
-    ro_min = 1
-    ro_max = 1
-    ro_num_of_steps = 1
-    ro_arr = np.linspace(ro_min, ro_max, ro_num_of_steps)
-
-    sigma_min = 0.1
-    sigma_max = 5
-    sigma_num_of_steps = 5
-    sigma_arr = np.linspace(sigma_min, sigma_max, sigma_num_of_steps)
-
-    kernel_name_arr = ["kernel_GAUSS", "kernel_LINEAR"]
-
-    train_percent = 0.6
-    order_of_first_selection = 8
-    order_of_second_selection = 8
+def greed_args_brute_force(sample, c_arr, sigma_arr, kernel_name_arr,  ro=1, ny_coef=1/2, train_percent=0.6,
+                           first_cv_order=8, second_cv_order=8, show_heat_map=True):
 
     best_accuracy = -1
     tmp_potential_best_params = []
     percent_for_potential = 0.9
-
+    length = int(np.floor(sample.length() * train_percent))
+    lambda_arr = [1 / (2 * c * length) for c in c_arr]
     for kernel_name in kernel_name_arr:
-        if kernel_name == "kernel_GAUSS":
-            tmp_sigma_arr = sigma_arr
-        elif kernel_name == "kernel_LINEAR":
-            tmp_sigma_arr = [1]
-        else:
-            tmp_sigma_arr = [1]
         accuracy_matrix = []
-        for sigma in tmp_sigma_arr:
+        for sigma in sigma_arr:
             accuracy_matrix_line = []
             if kernel_name == "kernel_GAUSS":
                 kernel_param = {
@@ -117,38 +97,37 @@ def greed_args_brute_force(sample):
                 kernel = kernel_LINEAR(kernel_param)
 
             for lambda_var in lambda_arr:
-                for ro in ro_arr:
-                    norma_param = {
-                        "lambda_var": lambda_var,
-                        "ro": ro,
-                        "kernel": kernel,
-                        "ny": 1/2
+                norma_param = {
+                    "lambda_var": lambda_var,
+                    "ro": ro,
+                    "kernel": kernel,
+                    "ny": ny_coef
+                }
+
+                accuracy_mean, accuracy_var = cv_test(sample, norma_param, first_cv_order, train_percent)
+                accuracy_matrix_line.append(accuracy_mean)
+                print("accuracy_mean = %s" % format(accuracy_mean, ""), end="\t")
+                print("accuracy_var = %s" % format(accuracy_var, ""), end="\t")
+                print("kernel = %s" % format(kernel, ""), end="\t")
+                print("lambda_var = %s" % format(lambda_var, ""), end="\t")
+                print("ro = %s" % format(ro, ""), end="\t")
+                print()
+
+                if accuracy_mean >= percent_for_potential * best_accuracy:
+                    tmp_node = {
+                        "norma_param": norma_param,
+                        "kernel_param": kernel_param,
+                        "accuracy_mean": accuracy_mean,
+                        "accuracy_var": accuracy_var,
                     }
-
-                    accuracy_mean, accuracy_var = cv_test(sample, norma_param, order_of_first_selection, train_percent)
-                    accuracy_matrix_line.append(accuracy_mean)
-                    print("accuracy_mean = %s" % format(accuracy_mean, ""), end="\t")
-                    print("accuracy_var = %s" % format(accuracy_var, ""), end="\t")
-                    print("kernel = %s" % format(kernel, ""), end="\t")
-                    print("lambda_var = %s" % format(lambda_var, ""), end="\t")
-                    print("ro = %s" % format(ro, ""), end="\t")
-                    print()
-
-                    if accuracy_mean >= percent_for_potential * best_accuracy:
-                        tmp_node = {
-                            "norma_param": norma_param,
-                            "kernel_param":  kernel_param,
-                            "accuracy_mean": accuracy_mean,
-                            "accuracy_var": accuracy_var,
-                        }
-                        tmp_potential_best_params.append(tmp_node)
-                        if accuracy_mean > best_accuracy:
-                            best_accuracy = accuracy_mean
+                    tmp_potential_best_params.append(tmp_node)
+                    if accuracy_mean > best_accuracy:
+                        best_accuracy = accuracy_mean
 
             accuracy_matrix.append(accuracy_matrix_line)
-
-        ax = sns.heatmap(accuracy_matrix, vmin=0, vmax=1)
-        plt.show()
+        if show_heat_map:
+            sns.heatmap(accuracy_matrix, vmin=0, vmax=1)
+            plt.show()
 
     potential_best_params = get_potential_best_params(tmp_potential_best_params, best_accuracy, percent_for_potential)
     best_accuracy = -1
@@ -157,11 +136,12 @@ def greed_args_brute_force(sample):
     for node in potential_best_params:
         norma_param = node["norma_param"]
         old_accuracy = node["accuracy_mean"]
-        accuracy_mean, accuracy_var = cv_test(sample, norma_param, order_of_second_selection, train_percent)
+        old_accuracy_var = node["accuracy_var"]
+        accuracy_mean, accuracy_var = cv_test(sample, norma_param, second_cv_order, train_percent)
         print("curr_accuracy_mean = %s (%s)" % (format(accuracy_mean, ""), format(old_accuracy, "")))
+        print("curr_accuracy_var  = %s (%s)" % (format(accuracy_var, ""), format(old_accuracy_var, "")))
         print("curr_norma_param = ", end="")
-        for k, v in norma_param.items():
-            print("\'%s\': %s" % (format(k, ""), format(v, "")), end=",   ")
+        print_dict(norma_param)
         print()
 
         if accuracy_mean > best_accuracy:
@@ -171,7 +151,6 @@ def greed_args_brute_force(sample):
     print("best_accuracy = %s" % format(best_accuracy, ""))
     print("best_accuracy_var = %s" % format(best_accuracy_var, ""))
     print("best_norma_param = ", end="")
-    for k, v in best_norma_param.items():
-        print("\'%s\': %s" % (format(k, ""), format(v, "")), end=",   ")
+    print_dict(best_norma_param)
     print()
     return best_accuracy, best_norma_param
