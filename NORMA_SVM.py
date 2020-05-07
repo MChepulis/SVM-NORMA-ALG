@@ -9,6 +9,7 @@ class NORMA:
         self.sample = sample
         self.length = sample.length()
 
+
     def init_learn(self):
         self.C = 1 / (2 * self.lambda_var * self.length)
         self.ny = 1 / self.lambda_var * self.ny_coef
@@ -77,8 +78,8 @@ class NORMA:
             line[i] = self.coef[i]
         self.coef_on_step.append(line)
 
-    def save_b(self):
-        self.b_on_step.append(self.b)
+    def save_b(self, b_t):
+        self.b_on_step.append(b_t)
 
     def learn(self, lambda_var, ro, kernel, ny_coef):
         self.lambda_var = lambda_var
@@ -108,10 +109,27 @@ class NORMA:
             self.coef.append(alpha_t)
             b_t = b_t + alpha_t
             self.save_coef()
-            self.save_b()
+            self.save_b(b_t)
 
             t += 1
         self.b = b_t
+
+
+    def separate_by_mark(self, x_plot, y_plot):
+        first_x = []
+        first_y = []
+        second_x = []
+        second_y = []
+        for i in range(len(self.sample.points)):
+            point = self.sample.points[i]
+            if point.mark == +1:
+                first_x.append(x_plot[i])
+                first_y.append(y_plot[i])
+            else:
+                second_x.append(x_plot[i])
+                second_y.append(y_plot[i])
+        return first_x, first_y, second_x, second_y
+
 
     def save_coef_on_step_as_gif(self):
         name = "coef_on_step"
@@ -120,19 +138,46 @@ class NORMA:
         # plt.ylim((-0.02, 0.015))
         for line in self.coef_on_step:
             x_plot = range(len(line))
-            ax.bar(x_plot, line, color='dodgerblue')
+            y_plot = line
+            first_x, first_y, second_x, second_y = self.separate_by_mark(x_plot, y_plot)
+            ax.bar(first_x, first_y, color='dodgerblue')
+            ax.bar(second_x, second_y, color='darkorange')
             camera.snap()
 
         anim = camera.animate()
         anim.save("%s.gif" % name, writer="imagemagick")
         plt.close(fig)
 
-    def show_coef_on_step(self, step = -1):
+    def show_b_on_step(self):
+
+        fig, ax = plt.subplots(1, 1)
+        y_plot = self.b_on_step
+        x_plot = range(len(y_plot))
+        first_x, first_y, second_x, second_y = self.separate_by_mark(x_plot, y_plot)
+        ax.plot(x_plot, y_plot)
+        ax.plot(first_x, first_y, ".", color='dodgerblue')
+        ax.plot(second_x, second_y, ".", color='darkorange')
+        fig.show()
+        # plt.close(fig)
+
+    def show_coef_on_step(self, step=-1):
 
         fig, ax = plt.subplots(1, 1)
         y_plot = self.coef_on_step[step]
         x_plot = range(len(y_plot))
-        ax.bar(x_plot, y_plot, color='dodgerblue')
+        first_x, first_y, second_x, second_y = self.separate_by_mark(x_plot, y_plot)
+        ax.bar(first_x, first_y, color='dodgerblue')
+        ax.bar(second_x, second_y, color='darkorange')
         fig.show()
         # plt.close(fig)
+
+    def classify_func_on_step(self, step, x):
+        kernel = self.kernel
+        coef = self.coef_on_step[step]
+        b = self.b_on_step[step]
+        result = 0
+        for i in range(self.length):
+            result += coef[i] * kernel.kernel_func(self.sample.points[i].value, x)
+
+        return result + b
 

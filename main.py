@@ -236,7 +236,7 @@ def greed_auto_tuning():
             "p": 0,
             "alpha": 1 / 2,
             "mean": [0, 0],
-            "r_mean": 20,
+            "r_mean": 7,
             "r_scale": 0.5,
         }
         train_sample_capacity = 100
@@ -246,13 +246,13 @@ def greed_auto_tuning():
         ny_coef = 1/2
 
         c_min_pow = -25
-        c_max_pow = 25
+        c_max_pow = 10
         c_num_of_steps = 25
         c_pow_arr = np.linspace(c_min_pow, c_max_pow, c_num_of_steps)
         c_arr = [2 ** alpha for alpha in c_pow_arr]
 
         sigma_min = 0.1
-        sigma_max = 20
+        sigma_max = 5
         sigma_num_of_steps = 10
         sigma_arr = np.linspace(sigma_min, sigma_max, sigma_num_of_steps)
 
@@ -271,15 +271,15 @@ def greed_auto_tuning():
             "alpha": 1 / 2,
             "mean": [0, 0]
         }
-        train_sample_capacity = 100
+        train_sample_capacity = 200
         test_sample_capacity = 1000
 
         ro = 1
         ny_coef = 1/2
 
-        c_min_pow = -10
+        c_min_pow = -25
         c_max_pow = 10
-        c_num_of_steps = 25
+        c_num_of_steps = 50
         c_pow_arr = np.linspace(c_min_pow, c_max_pow, c_num_of_steps)
         c_arr = [2 ** alpha for alpha in c_pow_arr]
 
@@ -291,7 +291,7 @@ def greed_auto_tuning():
         # second_cv_order = 8
         # train_percent = 0.6
 
-        first_cv_order = 4
+        first_cv_order = 8
         second_cv_order = 8
         train_percent = 0.8
 
@@ -301,9 +301,10 @@ def greed_auto_tuning():
 
     train_sample = generator.generate(train_sample_capacity, generator_args)
 
-    best_accuracy, best_params = greed_args_brute_force(train_sample, c_arr, sigma_arr, kernel_name_arr, ro=ro,
-                                                        first_cv_order=first_cv_order, second_cv_order=second_cv_order,
-                                                        ny_coef=ny_coef, train_percent=train_percent)
+    best_accuracy, best_params, best_machine = greed_args_brute_force(train_sample, c_arr, sigma_arr, kernel_name_arr,
+                                                                      ro=ro, first_cv_order=first_cv_order,
+                                                                      second_cv_order=second_cv_order,
+                                                                      ny_coef=ny_coef, train_percent=train_percent)
 
     fig, ax = plt.subplots(1, 1)
     train_sample.draw(fig, ax, marker=True)
@@ -315,14 +316,16 @@ def greed_auto_tuning():
     ro = best_params["ro"]
     ny = best_params["ny"]
 
+    #
+    #divide_ind = int(np.floor(train_sample.length() * train_percent))
+    #random.shuffle(train_sample.points)
+    #train_sample = Sample(train_sample.points[:divide_ind])
 
-    divide_ind = int(np.floor(train_sample.length() * train_percent))
-    random.shuffle(train_sample.points)
-    train_sample = Sample(train_sample.points[:divide_ind])
 
-    classificator = NORMA(train_sample)
-    classificator.learn(lamda, ro, kernel, ny)
+    # classificator = NORMA(train_sample)
+    # classificator.learn(lamda, ro, kernel, ny)
 
+    classificator = best_machine
     test_sample = generator.generate(test_sample_capacity, generator_args)
 
     test(train_sample, test_sample, classificator)
@@ -339,9 +342,11 @@ def greed_auto_tuning():
     accuracy = accuracy_test(train_sample, classificator)
     print("train accuracy = %s" % format(accuracy, ""))
 
+    classificator.show_b_on_step()
     classificator.show_coef_on_step()
     if is_need_save_coef_on_step:
         classificator.save_coef_on_step_as_gif()
+
 
 if __name__ == "__main__":
     greed_auto_tuning()
