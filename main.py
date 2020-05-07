@@ -227,6 +227,7 @@ def main():
 
 def greed_auto_tuning():
     gen_flag = 0
+    is_need_save_coef_on_step = False
     if gen_flag == 1:
         key = "circle"
         seed = 1
@@ -245,20 +246,20 @@ def greed_auto_tuning():
         ny_coef = 1/2
 
         c_min_pow = -25
-        c_max_pow = 25
-        c_num_of_steps = 50
+        c_max_pow = 10
+        c_num_of_steps = 25
         c_pow_arr = np.linspace(c_min_pow, c_max_pow, c_num_of_steps)
         c_arr = [2 ** alpha for alpha in c_pow_arr]
 
         sigma_min = 0.1
-        sigma_max = 5
-        sigma_num_of_steps = 5
+        sigma_max = 3
+        sigma_num_of_steps = 10
         sigma_arr = np.linspace(sigma_min, sigma_max, sigma_num_of_steps)
 
         kernel_name_arr = ["kernel_GAUSS"]
 
-        first_cv_order = 4
-        second_cv_order = 8
+        first_cv_order = 3
+        second_cv_order = 6
 
     else:
         key = "shift_normal"
@@ -286,6 +287,9 @@ def greed_auto_tuning():
 
         kernel_name_arr = ["kernel_LINEAR"]
 
+        # first_cv_order = 4
+        # second_cv_order = 8
+
         first_cv_order = 4
         second_cv_order = 8
 
@@ -294,7 +298,6 @@ def greed_auto_tuning():
         random.seed(seed)
 
     train_sample = generator.generate(train_sample_capacity, generator_args)
-
 
     best_accuracy, best_params = greed_args_brute_force(train_sample, c_arr, sigma_arr, kernel_name_arr, ro=ro,
                                                         first_cv_order=first_cv_order, second_cv_order=second_cv_order,
@@ -329,7 +332,9 @@ def greed_auto_tuning():
     accuracy = accuracy_test(train_sample, classificator)
     print("train accuracy = %s" % format(accuracy, ""))
 
-
+    classificator.show_coef_on_step()
+    if is_need_save_coef_on_step:
+        classificator.save_coef_on_step_as_gif()
 
 if __name__ == "__main__":
     greed_auto_tuning()

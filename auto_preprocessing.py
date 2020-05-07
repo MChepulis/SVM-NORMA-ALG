@@ -58,7 +58,7 @@ def cv_test(sample, norma_param, order=1,  train_percent=0.8):
         curr_accuracy = cross_validation(train_sample, test_sample, norma_param)
         train_f, train_s = count_mark(train_sample)
         test_f, test_s = count_mark(test_sample)
-        print("train[{}, {}]\t test[{}, {}]\taccur = {}".format(train_f, train_s, test_f, test_s, curr_accuracy))
+        # print("train[{}, {}]\t test[{}, {}]\taccur = {}".format(train_f, train_s, test_f, test_s, curr_accuracy))
         accuracy_arr.append(curr_accuracy)
 
     accuracy_mean = np.mean(accuracy_arr)

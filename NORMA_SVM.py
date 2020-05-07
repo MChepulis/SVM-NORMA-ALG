@@ -1,5 +1,8 @@
 import numpy as np
 from enum import Enum
+import matplotlib.pyplot as plt
+from celluloid import Camera
+
 
 class NORMA:
     def __init__(self, sample):
@@ -15,6 +18,8 @@ class NORMA:
         self.beta = []
         self.coef = []
         self.b = 0
+        self.coef_on_step = []
+        self.b_on_step = []
 
     def los_func_deriv(self, f_x_t, y_t):
         if y_t * f_x_t <= self.ro:
@@ -65,6 +70,16 @@ class NORMA:
             result += self.coef[i] * self.kernel.kernel_func(x_i, point)
         return result
 
+
+    def save_coef(self):
+        line = np.zeros(self.length)
+        for i in range(len(self.coef)):
+            line[i] = self.coef[i]
+        self.coef_on_step.append(line)
+
+    def save_b(self):
+        self.b_on_step.append(self.b)
+
     def learn(self, lambda_var, ro, kernel, ny_coef):
         self.lambda_var = lambda_var
         self.ro = ro
@@ -92,6 +107,32 @@ class NORMA:
                 self.coef[i] = self.coef[i] * (1 - ny_t * self.lambda_var)
             self.coef.append(alpha_t)
             b_t = b_t + alpha_t
+            self.save_coef()
+            self.save_b()
 
             t += 1
         self.b = b_t
+
+    def save_coef_on_step_as_gif(self):
+        name = "coef_on_step"
+        fig, ax = plt.subplots(1, 1)
+        camera = Camera(fig)
+        # plt.ylim((-0.02, 0.015))
+        for line in self.coef_on_step:
+            x_plot = range(len(line))
+            ax.bar(x_plot, line, color='dodgerblue')
+            camera.snap()
+
+        anim = camera.animate()
+        anim.save("%s.gif" % name, writer="imagemagick")
+        plt.close(fig)
+
+    def show_coef_on_step(self, step = -1):
+
+        fig, ax = plt.subplots(1, 1)
+        y_plot = self.coef_on_step[step]
+        x_plot = range(len(y_plot))
+        ax.bar(x_plot, y_plot, color='dodgerblue')
+        fig.show()
+        # plt.close(fig)
+
