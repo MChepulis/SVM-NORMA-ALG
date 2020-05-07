@@ -226,7 +226,7 @@ def main():
 
 
 def greed_auto_tuning():
-    gen_flag = 0
+    gen_flag = 1
     is_need_save_coef_on_step = False
     if gen_flag == 1:
         key = "circle"
@@ -246,28 +246,28 @@ def greed_auto_tuning():
         ny_coef = 1/2
 
         c_min_pow = -25
-        c_max_pow = 10
+        c_max_pow = 25
         c_num_of_steps = 25
         c_pow_arr = np.linspace(c_min_pow, c_max_pow, c_num_of_steps)
         c_arr = [2 ** alpha for alpha in c_pow_arr]
 
         sigma_min = 0.1
-        sigma_max = 3
+        sigma_max = 20
         sigma_num_of_steps = 10
         sigma_arr = np.linspace(sigma_min, sigma_max, sigma_num_of_steps)
 
         kernel_name_arr = ["kernel_GAUSS"]
 
-        first_cv_order = 3
-        second_cv_order = 6
-
+        first_cv_order = 6
+        second_cv_order = 12
+        train_percent = 0.8
     else:
         key = "shift_normal"
         seed = 1
         generator = generate_dict["shift_normal"]
         generator_args = {
-            "shift": [10, 10],
-            "p": 0,
+            "shift": [2, 2],
+            "p": -1,
             "alpha": 1 / 2,
             "mean": [0, 0]
         }
@@ -289,9 +289,11 @@ def greed_auto_tuning():
 
         # first_cv_order = 4
         # second_cv_order = 8
+        # train_percent = 0.6
 
         first_cv_order = 4
         second_cv_order = 8
+        train_percent = 0.8
 
     if seed is not None:
         np.random.seed(seed)
@@ -301,7 +303,7 @@ def greed_auto_tuning():
 
     best_accuracy, best_params = greed_args_brute_force(train_sample, c_arr, sigma_arr, kernel_name_arr, ro=ro,
                                                         first_cv_order=first_cv_order, second_cv_order=second_cv_order,
-                                                        ny_coef=ny_coef)
+                                                        ny_coef=ny_coef, train_percent=train_percent)
 
     fig, ax = plt.subplots(1, 1)
     train_sample.draw(fig, ax, marker=True)
@@ -312,6 +314,11 @@ def greed_auto_tuning():
     lamda = best_params["lambda_var"]
     ro = best_params["ro"]
     ny = best_params["ny"]
+
+
+    divide_ind = int(np.floor(train_sample.length() * train_percent))
+    random.shuffle(train_sample.points)
+    train_sample = Sample(train_sample.points[:divide_ind])
 
     classificator = NORMA(train_sample)
     classificator.learn(lamda, ro, kernel, ny)
