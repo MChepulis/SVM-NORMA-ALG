@@ -207,3 +207,25 @@ class NORMA:
 
         return result + b
 
+    def count_non_zero_coef(self, step=-1, barrier_percent=0):
+        coef = self.coef_on_step[step]
+        count = 0
+        for value in coef:
+            if value != 0:
+                count += 1
+
+        barrier = barrier_percent * np.max(np.abs(coef))
+        count_red = 0
+        for i in range(self.length):
+            if np.abs(coef[i]) > barrier:
+                count_red += 1
+
+        return count, count_red, self.length
+
+
+
+
+
+
+
+

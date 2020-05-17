@@ -288,7 +288,7 @@ def greed_auto_tuning():
             "p": 0,
             "alpha": 1 / 2,
             "mean": [0, 0],
-            "r_mean": 10,
+            "r_mean": 3,
             "r_scale": 0.5,
         }
         train_sample_capacity = 100
@@ -323,12 +323,12 @@ def greed_auto_tuning():
         seed = 1
         generator = generate_dict["shift_normal"]
         generator_args = {
-            "shift": [1, 1],
-            "p": -1,
+            "shift": [3, 3],
+            "p": 0,
             "alpha": 1 / 2,
             "mean": [0, 0]
         }
-        train_sample_capacity = 300
+        train_sample_capacity = 100
         test_sample_capacity = 1000
 
         ro = 1
@@ -404,11 +404,15 @@ def greed_auto_tuning():
 
     test_accuracy, test_accuracy_red = accuracy_test(test_sample, classificator)
     train_accuracy, train_accuracy_red = accuracy_test(train_sample, classificator, barrier=barrier_percent)
+    count, count_red, amount = classificator.count_non_zero_coef(barrier_percent=barrier_percent)
     print("Classify func")
+    print("Support vectors mun = {} (amount = {})".format(count, amount))
     print("test accuracy  = %s" % format(test_accuracy, ""))
     print("train accuracy = %s" % format(train_accuracy, ""))
+
     print()
     print("Reduced classify func")
+    print("Support vectors mun = {} (amount = {})".format(count_red, amount))
     print("test accuracy  = %s" % format(test_accuracy_red, ""))
     print("train accuracy = %s" % format(train_accuracy_red, ""))
 
