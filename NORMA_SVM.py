@@ -29,17 +29,28 @@ class NORMA:
             return 0
 
     def classify(self, x):
-        result = 0
-        for i in range(self.length):
-            result += self.coef[i] * self.kernel.kernel_func(self.sample.points[i].value, x)
+        return np.sign(self.classify_func(x))
 
-        return np.sign(result + self.b)
+    def reduced_classify(self, x, barrier_percent=0.001):
+        return np.sign(self.reduced_classify_func(x, barrier_percent=barrier_percent))
 
     def classify_func(self, x):
         result = 0
         for i in range(self.length):
             result += self.coef[i] * self.kernel.kernel_func(self.sample.points[i].value, x)
+        return result + self.b
 
+    def reduced_classify_func(self, x, barrier_percent=0.1):
+        result = 0
+        barrier = barrier_percent * np.max(np.abs(self.coef))
+        tmp_coef = []
+        for i in range(self.length):
+            if np.abs(self.coef[i]) <= barrier:
+                tmp_coef.append(0)
+            else:
+                tmp_coef.append(self.coef[i])
+        for i in range(self.length):
+            result += tmp_coef[i] * self.kernel.kernel_func(self.sample.points[i].value, x)
         return result + self.b
 
     class AnswerType(Enum):
@@ -69,7 +80,7 @@ class NORMA:
         for i in range(ind_start, ind_end):
             x_i = self.sample.points[i].value
             result += self.coef[i] * self.kernel.kernel_func(x_i, point)
-        return result
+        return result + self.b
 
 
     def save_coef(self):
@@ -108,12 +119,12 @@ class NORMA:
                 self.coef[i] = self.coef[i] * (1 - ny_t * self.lambda_var)
             self.coef.append(alpha_t)
             b_t = b_t + alpha_t
+            self.b = b_t
             self.save_coef()
             self.save_b(b_t)
 
             t += 1
         self.b = b_t
-
 
     def separate_by_mark(self, x_plot, y_plot):
         first_x = []
@@ -130,9 +141,7 @@ class NORMA:
                 second_y.append(y_plot[i])
         return first_x, first_y, second_x, second_y
 
-
-    def save_coef_on_step_as_gif(self):
-        name = "coef_on_step"
+    def save_coef_on_step_as_gif(self, name="coef_on_step"):
         fig, ax = plt.subplots(1, 1)
         camera = Camera(fig)
         # plt.ylim((-0.02, 0.015))
@@ -178,6 +187,23 @@ class NORMA:
         result = 0
         for i in range(self.length):
             result += coef[i] * kernel.kernel_func(self.sample.points[i].value, x)
+
+        return result + b
+
+    def reduced_classify_func_on_step(self, step, x, barrier_percent=0.1):
+        kernel = self.kernel
+        coef = self.coef_on_step[step]
+        b = self.b_on_step[step]
+        result = 0
+        tmp_coef = []
+        barrier = barrier_percent * np.max(np.abs(coef))
+        for i in range(self.length):
+            if np.abs(coef[i]) <= barrier:
+                tmp_coef.append(0)
+            else:
+                tmp_coef.append(coef[i])
+        for i in range(self.length):
+            result += tmp_coef[i] * kernel.kernel_func(self.sample.points[i].value, x)
 
         return result + b
 

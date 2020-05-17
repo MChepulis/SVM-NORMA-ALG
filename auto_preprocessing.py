@@ -9,14 +9,19 @@ from NORMA_SVM import NORMA
 from kernels import kernel_LINEAR, kernel_GAUSS
 
 
-def accuracy_test(test_sample, classificator):
+def accuracy_test(test_sample, classificator, barrier=0.001):
     good_answer = 0
+    good_answer_red = 0
     for point in test_sample.points:
         answer = classificator.classify(point.value)
+        answer_red = classificator.reduced_classify(point.value, barrier_percent=barrier)
         if answer == point.mark:
             good_answer += 1
+        if answer_red == point.mark:
+            good_answer_red += 1
     accuracy = good_answer / test_sample.length()
-    return accuracy
+    good_answer_red = good_answer_red / test_sample.length()
+    return accuracy, good_answer_red
 
 
 def cross_validation(train_sample, test_sample,  norma_params):
@@ -27,7 +32,7 @@ def cross_validation(train_sample, test_sample,  norma_params):
 
     classificator = NORMA(train_sample)
     classificator.learn(lambda_var, ro, kernel, ny)
-    accuracy = accuracy_test(test_sample, classificator)
+    accuracy, _ = accuracy_test(test_sample, classificator)
     return accuracy, classificator
 
 

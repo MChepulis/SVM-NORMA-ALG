@@ -9,10 +9,10 @@ from kernels import kernel_LINEAR, kernel_GAUSS
 from auto_preprocessing import accuracy_test, greed_args_brute_force
 
 
-def draw_divide_line_with_contour(train_sample, classificator, num_of_elem=10, offset=2):
+def draw_divide_line_with_contour(train_sample, classificator, num_of_elem=10, offset=2,
+                                  is_need_plot_reduced_line=False, barrier=0.001):
     fig, ax = plt.subplots(1, 1)
     train_sample.draw(fig, ax, marker=True)
-
     start_x = train_sample.points[0].value[0]
     start_y = train_sample.points[0].value[1]
     end_x = train_sample.points[0].value[0]
@@ -35,19 +35,32 @@ def draw_divide_line_with_contour(train_sample, classificator, num_of_elem=10, o
     x = np.linspace(start_x, end_x, num_of_elem)
     y = np.linspace(start_y, end_y, num_of_elem)
     marks = []
-
+    marks_reduce = []
     for i in range(num_of_elem):
         row = y[i]
         marks_line = []
+        mark_reduce_line = []
         for j in range(num_of_elem):
             col = x[j]
             point = [col, row]
             mark = classificator.classify_func(point)
             marks_line.append(mark)
+
+            if is_need_plot_reduced_line:
+                mark_reduce = classificator.reduced_classify_func(point, barrier_percent=barrier)
+                mark_reduce_line.append(mark_reduce)
+
         marks.append(marks_line)
+        if is_need_plot_reduced_line:
+            marks_reduce.append(mark_reduce_line)
 
     lev = [0]
     ax.contour(x, y, marks, levels=lev, colors='r')
+    ax.plot([start_x], [start_y], color="r", label="separate line")
+    if is_need_plot_reduced_line:
+        ax.contour(x, y, marks_reduce, levels=lev, colors='g')
+        ax.plot([start_x], [start_y], color="g", label="reduced separate line({})".format(barrier))
+        ax.legend()
     fig.show()
     # plt.close(fig)
 
@@ -55,26 +68,36 @@ def draw_divide_line_with_contour(train_sample, classificator, num_of_elem=10, o
 from celluloid import Camera
 
 
-def draw_line_on_step(classificator, num_of_elem=10, offset=2, name="line_on_step"):
+def draw_line_on_step(classificator, num_of_elem=10, offset=2, name="line_on_step",
+                      is_need_plot_reduced_line=False, barrier=0.001):
     fig, ax = plt.subplots(1, 1)
     camera = Camera(fig)
     train_sample = classificator.sample
 
+    ax.plot([0], [0], color="r", label="separate line")
+    ax.plot([0], [0], color="g", label="reduced separate line({})".format(barrier))
+    fig.legend()
+
     for i in range(len(classificator.sample.points)):
         print("{}\t". format(i, ""), end="")
         tmp_sample = Sample(classificator.sample.points[:i])
-        train_sample.draw(fig, ax, marker=True)
+        # train_sample.draw(fig, ax, marker=True)
         tmp_sample.draw(fig, ax, marker=False)
-        draw_divide_line_with_contour_on_step(fig, ax, train_sample, classificator, num_of_elem, offset, i)
+        draw_divide_line_with_contour_on_step(fig, ax, train_sample, classificator, num_of_elem, offset, i,
+                                              is_need_plot_reduced_line=is_need_plot_reduced_line, barrier=barrier)
 
         camera.snap()
 
+    print()
+    print("save init")
     anim = camera.animate()
     anim.save("%s.gif" % name, writer="imagemagick")
+    print("save done")
     plt.close(fig)
 
 
-def draw_divide_line_with_contour_on_step(fig, ax, train_sample, classificator, num_of_elem=10, offset=2, step=-1):
+def draw_divide_line_with_contour_on_step(fig, ax, train_sample, classificator, num_of_elem=10, offset=2, step=-1,
+                                          is_need_plot_reduced_line=False, barrier=0.001):
 
     start_x = train_sample.points[0].value[0]
     start_y = train_sample.points[0].value[1]
@@ -98,66 +121,30 @@ def draw_divide_line_with_contour_on_step(fig, ax, train_sample, classificator, 
     x = np.linspace(start_x, end_x, num_of_elem)
     y = np.linspace(start_y, end_y, num_of_elem)
     marks = []
-
+    marks_reduce = []
     for i in range(num_of_elem):
         row = y[i]
         marks_line = []
+        mark_reduce_line = []
         for j in range(num_of_elem):
             col = x[j]
             point = [col, row]
-            mark = classificator.classify_func_on_step(step, point)
+            mark = classificator.classify_func_on_step(x=point, step=step)
             marks_line.append(mark)
+
+            if is_need_plot_reduced_line:
+                mark_reduce = classificator.reduced_classify_func_on_step(x=point, step=step, barrier_percent=barrier)
+                mark_reduce_line.append(mark_reduce)
+
         marks.append(marks_line)
+        if is_need_plot_reduced_line:
+            marks_reduce.append(mark_reduce_line)
 
     lev = [0]
     ax.contour(x, y, marks, levels=lev, colors='r')
+    if is_need_plot_reduced_line:
+        ax.contour(x, y, marks_reduce, levels=lev, colors='g')
 
-
-
-def draw_divide_line(train_sample, classificator, num_of_elem=10, offset=2):
-    fig, ax = plt.subplots(1, 1)
-    train_sample.draw(fig, ax, marker=True)
-    num_of_elem = 50
-
-    start_x = train_sample.points[0].value[0]
-    start_y = train_sample.points[0].value[1]
-    end_x = train_sample.points[0].value[0]
-    end_y = train_sample.points[0].value[1]
-
-    for pt in train_sample.points:
-        if pt.value[0] < start_x:
-            start_x = pt.value[0]
-        if pt.value[1] < start_y:
-            start_y = pt.value[1]
-        if pt.value[0] > end_x:
-            end_x = pt.value[0]
-        if pt.value[1] > end_y:
-            end_y = pt.value[1]
-
-    start_x = start_x - offset
-    start_y = start_y - offset
-    end_x = end_x + offset
-    end_y = end_y + offset
-
-    for i in range(num_of_elem):
-        row = start_y + (end_y - start_y) * i / (num_of_elem - 1)
-        for j in range(num_of_elem):
-            col = start_x + (end_x - start_x) * j / (num_of_elem - 1)
-            point = [col, row]
-            mark = classificator.get_classify_answer(point)
-            if mark == classificator.AnswerType.RIGHT:
-                ax.plot(point[0], point[1], ".r")
-            elif mark == classificator.AnswerType.RIGHT_MARGIN:
-                ax.plot(point[0], point[1], ".g")
-            elif mark == classificator.AnswerType.LEFT:
-                ax.plot(point[0], point[1], "xb")
-            elif mark == classificator.AnswerType.LEFT_MARGIN:
-                ax.plot(point[0], point[1], "xb")
-            else:
-                ax.plot(point[0], point[1], "hm")
-
-    fig.show()
-    # plt.close(fig)
 
 
 def test(train_sample, test_sample, classificator):
@@ -177,9 +164,10 @@ def test(train_sample, test_sample, classificator):
 
 
 def run_NORMA(sample_capacity, correlation, shift, lamda, ro, ny, kernel, gauss_sigma):
-    gen_flag = 1
+    gen_flag = 0
     if gen_flag == 1:
         key = "circle"
+        seed = 1
         generator = generate_dict["circle"]
         generator_args = {
             "p": correlation,
@@ -190,6 +178,7 @@ def run_NORMA(sample_capacity, correlation, shift, lamda, ro, ny, kernel, gauss_
         }
     else:
         key = "shift_normal"
+        seed = 1
         generator = generate_dict["shift_normal"]
         generator_args = {
             "shift": [shift, shift],
@@ -198,16 +187,14 @@ def run_NORMA(sample_capacity, correlation, shift, lamda, ro, ny, kernel, gauss_
             "mean": [0, 0]
         }
 
-    read_from_file_flag = True
-    data_filename = "data.csv"
     train_sample_capacity = sample_capacity
 
-    if read_from_file_flag:
-        train_sample = Sample([])
-        train_sample.read_sample_from_csv_file(data_filename, keyword=key)
-    else:
-        train_sample = generator.generate(train_sample_capacity, generator_args)
-        train_sample.write_sample_to_csv_file(data_filename, keyword=key)
+    if seed is not None:
+        np.random.seed(seed)
+        random.seed(seed)
+
+    train_sample = generator.generate(train_sample_capacity, generator_args)
+    train_sample = Sample(sorted(train_sample.points, key=lambda value: value.mark))
 
     fig, ax = plt.subplots(1, 1)
     train_sample.draw(fig, ax, marker=True)
@@ -230,12 +217,13 @@ def run_NORMA(sample_capacity, correlation, shift, lamda, ro, ny, kernel, gauss_
 
     print("\n\n\n")
 
-    draw_divide_line(train_sample, classificator)
+    draw_divide_line_with_contour(train_sample, classificator)
 
     print("\n\n\n")
 
     accuracy = accuracy_test(test_sample, classificator)
     print("accuracy = %s" % format(accuracy, ""))
+    draw_line_on_step(classificator, name="lllllll", num_of_elem=50, offset=2)
 
 def main():
     # default params
@@ -289,7 +277,7 @@ def main():
 
 def greed_auto_tuning():
     gen_flag = 1
-    is_need_save_coef_on_step = False
+    is_need_save_coef_on_step = True
     if gen_flag == 1:
         key = "circle"
         line_on_step_gif_name = "gauss_line_on_step"
@@ -300,7 +288,7 @@ def greed_auto_tuning():
             "p": 0,
             "alpha": 1 / 2,
             "mean": [0, 0],
-            "r_mean": 7,
+            "r_mean": 10,
             "r_scale": 0.5,
         }
         train_sample_capacity = 100
@@ -323,8 +311,11 @@ def greed_auto_tuning():
         kernel_name_arr = ["kernel_GAUSS"]
 
         first_cv_order = 6
-        second_cv_order = 12
+        second_cv_order = 1
         train_percent = 0.8
+
+        barrier_percent = 0.1
+        is_need_plot_reduced_line = True
     else:
         key = "shift_normal"
         line_on_step_gif_name = "linear_line_on_step"
@@ -332,12 +323,12 @@ def greed_auto_tuning():
         seed = 1
         generator = generate_dict["shift_normal"]
         generator_args = {
-            "shift": [2, 2],
+            "shift": [1, 1],
             "p": -1,
             "alpha": 1 / 2,
             "mean": [0, 0]
         }
-        train_sample_capacity = 100
+        train_sample_capacity = 300
         test_sample_capacity = 1000
 
         ro = 1
@@ -353,13 +344,13 @@ def greed_auto_tuning():
 
         kernel_name_arr = ["kernel_LINEAR"]
 
-        # first_cv_order = 4
-        # second_cv_order = 8
-        # train_percent = 0.6
-
         first_cv_order = 8
-        second_cv_order = 8
+        second_cv_order = 1
         train_percent = 0.8
+
+        barrier_percent = 0.1
+        is_need_plot_reduced_line = True
+
 
     if seed is not None:
         np.random.seed(seed)
@@ -394,27 +385,40 @@ def greed_auto_tuning():
     # classificator.learn(lamda, ro, kernel, ny)
 
     classificator = best_machine
+    print("-------------------------------------------")
+    print("Best Params")
+    print("lambda = {}, C = {}, kernel={}, ro = {}, ny = {}".format(classificator.lambda_var, classificator.C,
+                                                                    classificator.kernel, classificator.ro,
+                                                                    classificator.ny_coef))
+    print("-------------------------------------------")
     test_sample = generator.generate(test_sample_capacity, generator_args)
 
     test(train_sample, test_sample, classificator)
 
     print("\n\n\n")
 
-    draw_divide_line_with_contour(train_sample, classificator, num_of_elem=50, offset=2)
+    draw_divide_line_with_contour(train_sample, classificator, num_of_elem=50, offset=2,
+                                  is_need_plot_reduced_line=is_need_plot_reduced_line, barrier=barrier_percent)
 
     print("\n\n\n")
 
-    accuracy = accuracy_test(test_sample, classificator)
-    print("accuracy = %s" % format(accuracy, ""))
-
-    accuracy = accuracy_test(train_sample, classificator)
-    print("train accuracy = %s" % format(accuracy, ""))
+    test_accuracy, test_accuracy_red = accuracy_test(test_sample, classificator)
+    train_accuracy, train_accuracy_red = accuracy_test(train_sample, classificator, barrier=barrier_percent)
+    print("Classify func")
+    print("test accuracy  = %s" % format(test_accuracy, ""))
+    print("train accuracy = %s" % format(train_accuracy, ""))
+    print()
+    print("Reduced classify func")
+    print("test accuracy  = %s" % format(test_accuracy_red, ""))
+    print("train accuracy = %s" % format(train_accuracy_red, ""))
 
     classificator.show_b_on_step()
     classificator.show_coef_on_step()
     if is_need_save_coef_on_step:
         classificator.save_coef_on_step_as_gif(name=coef_on_step_gif_name)
-    draw_line_on_step(classificator, name=line_on_step_gif_name, num_of_elem=50, offset=2)
+    draw_line_on_step(classificator, name=line_on_step_gif_name, num_of_elem=50, offset=2,
+                      is_need_plot_reduced_line=is_need_plot_reduced_line, barrier=barrier_percent)
+
 
 if __name__ == "__main__":
     greed_auto_tuning()
