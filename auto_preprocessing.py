@@ -61,6 +61,8 @@ def cv_test(sample, norma_param, order=1,  train_percent=0.8):
 
         train_sample = Sample(points[:divide_ind])
         test_sample = Sample(points[divide_ind:])
+        # для рассмотрения обучающей выборки отсортированной по классам. ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        # train_sample = Sample(sorted(train_sample.points, key=lambda point: point.mark))
 
         curr_accuracy, classificator = cross_validation(train_sample, test_sample, norma_param)
         if curr_accuracy > local_best_accur:

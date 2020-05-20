@@ -276,7 +276,7 @@ def main():
 
 
 def greed_auto_tuning():
-    gen_flag = 1
+    gen_flag = 0
     is_need_save_coef_on_step = True
     if gen_flag == 1:
         key = "circle"
@@ -324,11 +324,11 @@ def greed_auto_tuning():
         generator = generate_dict["shift_normal"]
         generator_args = {
             "shift": [3, 3],
-            "p": 0,
+            "p": -1,
             "alpha": 1 / 2,
             "mean": [0, 0]
         }
-        train_sample_capacity = 100
+        train_sample_capacity = 300
         test_sample_capacity = 1000
 
         ro = 1
@@ -426,8 +426,10 @@ def greed_auto_tuning():
 
 if __name__ == "__main__":
     greed_auto_tuning()
-
     # main()
+
+
+
 
 
 
